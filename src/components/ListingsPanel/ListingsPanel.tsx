@@ -2,11 +2,28 @@ import React from 'react';
 import { useListings } from '../../context/ListingsContext';
 import { ListingCard } from '../ListingCard/ListingCard';
 import { OfferBanner } from '../OfferBanner/OfferBanner';
-import { HiOutlineFunnel } from 'react-icons/hi2';
-import { HiChevronDown } from 'react-icons/hi2';
+import { HiOutlineFunnel, HiChevronDown } from 'react-icons/hi2';
+import { useListingsSort } from './useListingsSort';
+import { useListingsFilter } from './useListingsFilter';
 
 export function ListingsPanel() {
   const { listings, isLoading, error } = useListings();
+  const {
+    filters,
+    isFiltersOpen,
+    filteredListings,
+    toggleFilters,
+    handleStatusChange,
+    clearFilters,
+  } = useListingsFilter(listings);
+  const {
+    sortBy: finalSortBy,
+    isDropdownOpen: finalIsDropdownOpen,
+    dropdownRef: finalDropdownRef,
+    sortedListings: finalSortedListings,
+    toggleDropdown: finalToggleDropdown,
+    handleSortChange: finalHandleSortChange,
+  } = useListingsSort(filteredListings);
 
   if (isLoading) {
     return (
@@ -25,28 +42,113 @@ export function ListingsPanel() {
   }
 
   return (
-    <div className="h-[calc(100vh-64px)] flex flex-col bg-white">
-      <div className="border-b">
-        <div className="px-6 py-4">
-          <h1 className="text-2xl font-semibold text-gray-900 mb-1">Homes for sale in Tampa</h1>
-          <p className="text-[15px] text-gray-600">
-            {listings.length} listings found — Listed on the MLS. Provided by Opendoor Brokerage.
-          </p>
-          <div className="flex items-center gap-3 mt-4">
-            <button className="h-9 px-3 border rounded-lg hover:bg-gray-50 text-gray-700 text-sm font-medium flex items-center gap-1.5">
-              Newest
-              <HiChevronDown className="w-4 h-4 text-gray-500" />
+    <div className="overflow-y-auto h-[calc(100vh-64px)] flex flex-col bg-white">
+      <div className="px-6 py-4">
+        <h1 className="text-2xl font-semibold text-gray-900 mb-1">Homes for sale in Tampa</h1>
+        <p className="text-[15px] text-gray-600">
+          {finalSortedListings.length} listings found — Listed on the MLS. Provided by Opendoor
+          Brokerage.
+        </p>
+        <div className="flex items-center gap-3 mt-10">
+          <div className="relative" ref={finalDropdownRef}>
+            <button
+              onClick={finalToggleDropdown}
+              className="h-9 px-3 border rounded-lg hover:bg-gray-50 text-gray-700 text-sm font-medium flex items-center gap-1.5"
+            >
+              {finalSortBy === 'newest' ? 'Newest' : 'Oldest'}
+              <HiChevronDown
+                className={`w-4 h-4 text-gray-500 transition-transform ${finalIsDropdownOpen ? 'rotate-180' : ''}`}
+              />
             </button>
-            <button className="h-9 px-3 border rounded-lg hover:bg-gray-50 text-gray-700 text-sm font-medium flex items-center gap-1.5">
-              <HiOutlineFunnel className="w-4 h-4" />
-              More filters
-            </button>
+
+            {finalIsDropdownOpen && (
+              <div className="absolute top-full left-0 mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-10">
+                <button
+                  onClick={() => finalHandleSortChange('newest')}
+                  className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${finalSortBy === 'newest' ? 'text-blue-600 font-medium' : 'text-gray-700'}`}
+                >
+                  Newest
+                </button>
+                <button
+                  onClick={() => finalHandleSortChange('oldest')}
+                  className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${finalSortBy === 'oldest' ? 'text-blue-600 font-medium' : 'text-gray-700'}`}
+                >
+                  Oldest
+                </button>
+              </div>
+            )}
           </div>
+          <button
+            onClick={toggleFilters}
+            className={`h-9 px-3 border rounded-lg hover:bg-gray-50 text-gray-700 text-sm font-medium flex items-center gap-1.5 ${filters.status !== 'all' ? 'bg-blue-50 border-blue-200 text-blue-600' : ''}`}
+          >
+            <HiOutlineFunnel className="w-4 h-4" />
+            More filters
+            {filters.status !== 'all' && (
+              <span className="ml-1.5 bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded text-xs">
+                1
+              </span>
+            )}
+          </button>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-6 py-4">
-        {listings.map((listing, index) => {
+      {/* Filters Panel */}
+      {isFiltersOpen && (
+        <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-medium text-gray-900">Filters</h2>
+            {filters.status !== 'all' && (
+              <button
+                onClick={clearFilters}
+                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+              >
+                Clear all
+              </button>
+            )}
+          </div>
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-sm font-medium text-gray-700 mb-2">Listing Status</h3>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => handleStatusChange('all')}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium ${
+                    filters.status === 'all'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-white text-gray-700 border hover:bg-gray-50'
+                  }`}
+                >
+                  All
+                </button>
+                <button
+                  onClick={() => handleStatusChange('active')}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium ${
+                    filters.status === 'active'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-white text-gray-700 border hover:bg-gray-50'
+                  }`}
+                >
+                  Active
+                </button>
+                <button
+                  onClick={() => handleStatusChange('sold')}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium ${
+                    filters.status === 'sold'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-white text-gray-700 border hover:bg-gray-50'
+                  }`}
+                >
+                  Sold
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="flex-1 px-6 py-4">
+        {finalSortedListings.map((listing, index) => {
           if (index === 2) {
             return (
               <React.Fragment key={listing._id}>
