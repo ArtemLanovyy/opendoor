@@ -12,7 +12,7 @@ interface ListingsContextType {
   fetchListings: () => Promise<void>;
 }
 
-const ListingsContext = createContext<ListingsContextType | undefined>(undefined);
+export const ListingsContext = createContext<ListingsContextType | undefined>(undefined);
 
 const LISTINGS_API_URL =
   'https://u2oyhiwlmc.execute-api.us-east-1.amazonaws.com/production/get-listings';
