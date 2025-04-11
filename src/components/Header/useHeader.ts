@@ -1,7 +1,8 @@
 import { useState } from 'react';
+import { useListings } from '../../context/ListingsContext';
 
 export const useHeader = () => {
-  const [searchQuery, setSearchQuery] = useState('');
+  const { searchQuery, setSearchQuery } = useListings();
   const [isSidePanelOpen, setIsSidePanelOpen] = useState(false);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {

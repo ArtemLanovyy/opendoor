@@ -1,8 +1,12 @@
 import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { Listing, ListingsResponse } from '../types/listings';
+import { useListingsSearch } from '../hooks/useListingsSearch';
 
 interface ListingsContextType {
   listings: Listing[];
+  searchedListings: Listing[];
+  searchQuery: string;
+  setSearchQuery: (query: string) => void;
   isLoading: boolean;
   error: string | null;
   fetchListings: () => Promise<void>;
@@ -15,8 +19,11 @@ const LISTINGS_API_URL =
 
 export function ListingsProvider({ children }: { children: ReactNode }) {
   const [listings, setListings] = useState<Listing[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const searchedListings = useListingsSearch(listings, searchQuery);
 
   const fetchListings = async () => {
     try {
@@ -48,6 +55,9 @@ export function ListingsProvider({ children }: { children: ReactNode }) {
 
   const value = {
     listings,
+    searchedListings,
+    searchQuery,
+    setSearchQuery,
     isLoading,
     error,
     fetchListings,
