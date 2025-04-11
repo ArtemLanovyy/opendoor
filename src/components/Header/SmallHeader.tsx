@@ -41,8 +41,8 @@ export const SmallHeader = ({
       >
         <div className="p-6">
           <div className="space-y-6">
-            <button className="w-full text-left text-[#2a2c30] text-sm font-medium hover:text-black py-2 flex items-center">
-              Recommended{' '}
+            <button className="w-full text-left text-[#2a2c30] text-sm font-medium hover:text-black py-2 flex items-center gap-1">
+              Recommended
               <span className="relative">
                 listings
                 <span className="absolute top-0 -right-1 w-[6px] h-[6px] rounded-full bg-[#ff5d47]"></span>
@@ -60,6 +60,13 @@ export const SmallHeader = ({
           </div>
         </div>
       </div>
+
+      {isSidePanelOpen && (
+        <div
+          className="xl:hidden fixed inset-0 top-[64px] bg-black/20 z-30 pointer-events-auto"
+          style={{ backdropFilter: 'blur(2px)' }}
+        />
+      )}
     </>
   );
 };
