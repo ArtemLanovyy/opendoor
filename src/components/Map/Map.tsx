@@ -1,6 +1,8 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useMemo } from 'react';
 import { HiOutlinePlus, HiOutlineMinus } from 'react-icons/hi2';
 import { GoogleMap, useLoadScript, MarkerF, MarkerClustererF } from '@react-google-maps/api';
+import { useListings } from '../../context/ListingsContext.tsx';
+import { Listing } from '../../types/listings.ts';
 
 const TAMPA_CENTER = {
   lat: 27.9506,
@@ -22,12 +24,27 @@ interface Property {
 }
 
 interface MapProps {
-  properties?: Property[];
   onBoundsChanged?: (bounds: google.maps.LatLngBounds) => void;
   onPropertyClick?: (propertyId: string) => void;
 }
 
-export function Map({ properties = [], onBoundsChanged, onPropertyClick }: MapProps) {
+const listingToProperty = (listing: Listing): Property => {
+  return {
+    id: listing._id,
+    lat: listing.address.location[0],
+    lng: listing.address.location[1],
+    price: listing.userData.askingPrice,
+  };
+};
+
+export function Map({ onBoundsChanged, onPropertyClick }: MapProps) {
+  const { sortedListings } = useListings();
+
+  const properties: Property[] = useMemo(
+    () => sortedListings.map(listing => listingToProperty(listing)),
+    [sortedListings]
+  );
+
   const { isLoaded } = useLoadScript({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
   });

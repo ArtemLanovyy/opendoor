@@ -6,7 +6,6 @@ import { OfferBanner } from '../OfferBanner/OfferBanner';
 import { HiOutlineFunnel, HiChevronDown, HiMagnifyingGlass } from 'react-icons/hi2';
 
 export function ListingsPanel() {
-  // Global data state
   const {
     searchQuery,
     isLoading,
@@ -19,7 +18,6 @@ export function ListingsPanel() {
     handleSortChange,
   } = useListings();
 
-  // Local UI state
   const {
     isFiltersOpen,
     isDropdownOpen,
