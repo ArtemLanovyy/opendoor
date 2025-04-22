@@ -1,75 +1,85 @@
-import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import { Listing, ListingsResponse } from '../types/listings';
+import { createContext, useContext, ReactNode } from 'react';
+import { Listing } from '../types/listings';
 import { useListingsSearch } from '../hooks/useListingsSearch';
+import { useListingsFetch } from '../hooks/useListingsFetch';
+import { useListingsFilter, ListingStatus } from '../hooks/useListingsFilter';
+import { useListingsSort, SortOption } from '../hooks/useListingsSort';
 
 interface ListingsContextType {
+  // Data states
   listings: Listing[];
-  searchedListings: Listing[];
-  searchQuery: string;
-  setSearchQuery: (query: string) => void;
   isLoading: boolean;
   error: string | null;
+  searchQuery: string;
+
+  // Filter states
+  filters: { status: ListingStatus };
+  handleStatusChange: (status: ListingStatus) => void;
+  clearFilters: () => void;
+
+  // Sort states
+  sortBy: SortOption;
+  handleSortChange: (sortBy: SortOption) => void;
+
+  // Derived states
+  searchedListings: Listing[];
+  filteredListings: Listing[];
+  sortedListings: Listing[];
+
+  // Actions
+  setSearchQuery: (query: string) => void;
   fetchListings: () => Promise<void>;
 }
 
 export const ListingsContext = createContext<ListingsContextType | undefined>(undefined);
 
-const LISTINGS_API_URL =
-  'https://u2oyhiwlmc.execute-api.us-east-1.amazonaws.com/production/get-listings';
+export function useListings() {
+  const context = useContext(ListingsContext);
+  if (!context) {
+    throw new Error('useListings must be used within a ListingsProvider');
+  }
+  return context;
+}
 
 export function ListingsProvider({ children }: { children: ReactNode }) {
-  const [listings, setListings] = useState<Listing[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // Fetch listings
+  const { listings, isLoading, error, fetchListings } = useListingsFetch();
 
-  const searchedListings = useListingsSearch(listings, searchQuery);
+  // Search functionality
+  const { searchQuery, setSearchQuery, searchedListings } = useListingsSearch(listings);
 
-  const fetchListings = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      const response = await fetch(LISTINGS_API_URL);
+  // Filter functionality
+  const { filters, filteredListings, handleStatusChange, clearFilters } =
+    useListingsFilter(searchedListings);
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data: ListingsResponse = await response.json();
-
-      if (!data.success) {
-        throw new Error('Failed to fetch listings');
-      }
-
-      setListings(data.deals);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred while fetching listings');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchListings();
-  }, []);
+  // Sort functionality
+  const { sortBy, sortedListings, handleSortChange } = useListingsSort(filteredListings);
 
   const value = {
+    // Data states
     listings,
-    searchedListings,
-    searchQuery,
-    setSearchQuery,
     isLoading,
     error,
+    searchQuery,
+
+    // Filter states
+    filters,
+    handleStatusChange,
+    clearFilters,
+
+    // Sort states
+    sortBy,
+    handleSortChange,
+
+    // Derived states
+    searchedListings,
+    filteredListings,
+    sortedListings,
+
+    // Actions
+    setSearchQuery,
     fetchListings,
   };
 
   return <ListingsContext.Provider value={value}>{children}</ListingsContext.Provider>;
-}
-
-export function useListings() {
-  const context = useContext(ListingsContext);
-  if (context === undefined) {
-    throw new Error('useListings must be used within a ListingsProvider');
-  }
-  return context;
 }

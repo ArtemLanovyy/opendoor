@@ -1,4 +1,16 @@
-import '@testing-library/jest-dom';
+import '@testing-library/jest-dom/vitest';
+import { vi } from 'vitest';
+import { cleanup } from '@testing-library/react';
+
+// Mock fetch globally
+global.fetch = vi.fn();
+
+// Clean up after each test
+afterEach(() => {
+  cleanup();
+  vi.resetAllMocks();
+  (global.fetch as unknown as jest.Mock).mockReset();
+});
 
 // Add any global test setup here
 // For example, you can mock global objects or set up test environment variables

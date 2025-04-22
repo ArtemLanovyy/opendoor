@@ -1,18 +1,144 @@
+import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import { HiOutlinePlus, HiOutlineMinus } from 'react-icons/hi2';
+import { GoogleMap, useLoadScript, MarkerF, MarkerClustererF } from '@react-google-maps/api';
+import { useListings } from '../../context/ListingsContext.tsx';
+import { Listing } from '../../types/listings.ts';
 
-export function Map() {
+const TAMPA_CENTER = {
+  lat: 27.9506,
+  lng: -82.4572,
+};
+
+const mapOptions = {
+  disableDefaultUI: true,
+  clickableIcons: false,
+  minZoom: 8,
+  maxZoom: 20,
+};
+
+interface Property {
+  id: string;
+  lat: number;
+  lng: number;
+  price: number;
+}
+
+interface MapProps {
+  onBoundsChanged?: (bounds: google.maps.LatLngBounds) => void;
+  onPropertyClick?: (propertyId: string) => void;
+  selectedPropertyId?: string;
+}
+
+const listingToProperty = (listing: Listing): Property => {
+  return {
+    id: listing._id,
+    lat: listing.address.location[0],
+    lng: listing.address.location[1],
+    price: listing.userData.askingPrice,
+  };
+};
+
+export function Map({ onBoundsChanged, onPropertyClick, selectedPropertyId }: MapProps) {
+  const { sortedListings } = useListings();
+
+  const properties: Property[] = useMemo(
+    () => sortedListings.map(listing => listingToProperty(listing)),
+    [sortedListings]
+  );
+
+  const { isLoaded } = useLoadScript({
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
+  });
+
+  const [map, setMap] = useState<google.maps.Map | null>(null);
+  const mapRef = useRef<google.maps.Map | null>(null);
+
+  const onLoad = useCallback((map: google.maps.Map) => {
+    mapRef.current = map;
+    setMap(map);
+  }, []);
+
+  // Focus on a property when selectedPropertyId changes
+  useEffect(() => {
+    if (map && selectedPropertyId) {
+      const selectedProperty = properties.find(p => p.id === selectedPropertyId);
+      if (selectedProperty) {
+        map.panTo({ lat: selectedProperty.lat, lng: selectedProperty.lng });
+        map.setZoom(16);
+      }
+    }
+  }, [map, selectedPropertyId, properties]);
+
+  const handleZoomIn = () => {
+    if (map) {
+      map.setZoom((map.getZoom() || 10) + 1);
+    }
+  };
+
+  const handleZoomOut = () => {
+    if (map) {
+      map.setZoom((map.getZoom() || 10) - 1);
+    }
+  };
+
+  const handleBoundsChanged = () => {
+    if (map && onBoundsChanged) {
+      const bounds = map.getBounds();
+      if (bounds) {
+        onBoundsChanged(bounds);
+      }
+    }
+  };
+
+  if (!isLoaded) {
+    return (
+      <div className="h-[calc(100vh-64px)] bg-gray-200 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+      </div>
+    );
+  }
+
   return (
     <div className="h-[calc(100vh-64px)] bg-gray-200 relative">
-      <div className="absolute inset-0 flex items-center justify-center text-gray-500">
-        Map Placeholder
-      </div>
+      <GoogleMap
+        mapContainerClassName="w-full h-full"
+        center={TAMPA_CENTER}
+        zoom={10}
+        options={mapOptions}
+        onLoad={onLoad}
+        onBoundsChanged={handleBoundsChanged}
+      >
+        <MarkerClustererF>
+          {clusterer => (
+            <>
+              {properties.map(property => (
+                <MarkerF
+                  key={property.id}
+                  position={{ lat: property.lat, lng: property.lng }}
+                  onClick={() => onPropertyClick?.(property.id)}
+                  clusterer={clusterer}
+                  animation={
+                    selectedPropertyId === property.id ? google.maps.Animation.BOUNCE : undefined
+                  }
+                />
+              ))}
+            </>
+          )}
+        </MarkerClustererF>
+      </GoogleMap>
 
       <div className="absolute top-4 left-4">
         <div className="bg-white rounded-lg shadow-md flex flex-col divide-y">
-          <button className="w-8 h-8 flex items-center justify-center hover:bg-gray-50 rounded-t-lg">
+          <button
+            className="w-8 h-8 flex items-center justify-center hover:bg-gray-50 rounded-t-lg"
+            onClick={handleZoomIn}
+          >
             <HiOutlinePlus className="w-5 h-5" />
           </button>
-          <button className="w-8 h-8 flex items-center justify-center hover:bg-gray-50 rounded-b-lg">
+          <button
+            className="w-8 h-8 flex items-center justify-center hover:bg-gray-50 rounded-b-lg"
+            onClick={handleZoomOut}
+          >
             <HiOutlineMinus className="w-5 h-5" />
           </button>
         </div>
