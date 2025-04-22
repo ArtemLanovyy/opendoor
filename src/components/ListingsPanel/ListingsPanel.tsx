@@ -1,29 +1,33 @@
 import React from 'react';
 import { useListings } from '../../context/ListingsContext';
+import { useListingsUI } from './useListingsUI';
 import { ListingCard } from '../ListingCard/ListingCard';
 import { OfferBanner } from '../OfferBanner/OfferBanner';
 import { HiOutlineFunnel, HiChevronDown, HiMagnifyingGlass } from 'react-icons/hi2';
-import { useListingsSort } from './useListingsSort';
-import { useListingsFilter } from './useListingsFilter';
 
 export function ListingsPanel() {
-  const { searchedListings, searchQuery, isLoading, error } = useListings();
+  // Global data state
   const {
+    searchQuery,
+    isLoading,
+    error,
     filters,
-    isFiltersOpen,
-    filteredListings,
-    toggleFilters,
+    sortedListings,
     handleStatusChange,
     clearFilters,
-  } = useListingsFilter(searchedListings);
+    sortBy,
+    handleSortChange,
+  } = useListings();
+
+  // Local UI state
   const {
-    sortBy: finalSortBy,
-    isDropdownOpen: finalIsDropdownOpen,
-    dropdownRef: finalDropdownRef,
-    sortedListings: finalSortedListings,
-    toggleDropdown: finalToggleDropdown,
-    handleSortChange: finalHandleSortChange,
-  } = useListingsSort(filteredListings);
+    isFiltersOpen,
+    isDropdownOpen,
+    dropdownRef,
+    toggleFilters,
+    toggleDropdown,
+    closeDropdown,
+  } = useListingsUI();
 
   if (isLoading) {
     return (
@@ -41,37 +45,42 @@ export function ListingsPanel() {
     return <div className="p-4 text-red-600">Error: {error}</div>;
   }
 
+  const handleSortChangeWithUI = (newSortBy: typeof sortBy) => {
+    handleSortChange(newSortBy);
+    closeDropdown();
+  };
+
   return (
     <div className="overflow-y-auto h-[calc(100vh-64px)] flex flex-col bg-white">
       <div className="px-6 py-4">
         <h1 className="text-2xl font-semibold text-gray-900 mb-1">Homes for sale in Tampa</h1>
         <p className="text-[15px] text-gray-600">
-          {finalSortedListings.length} listings found — Listed on the MLS. Provided by Opendoor
+          {sortedListings.length} listings found — Listed on the MLS. Provided by Opendoor
           Brokerage.
         </p>
         <div className="flex items-center gap-3 mt-10">
-          <div className="relative" ref={finalDropdownRef}>
+          <div className="relative" ref={dropdownRef}>
             <button
-              onClick={finalToggleDropdown}
+              onClick={toggleDropdown}
               className="h-9 px-3 border rounded-lg hover:bg-gray-50 text-gray-700 text-sm font-medium flex items-center gap-1.5"
             >
-              {finalSortBy === 'newest' ? 'Newest' : 'Oldest'}
+              {sortBy === 'newest' ? 'Newest' : 'Oldest'}
               <HiChevronDown
-                className={`w-4 h-4 text-gray-500 transition-transform ${finalIsDropdownOpen ? 'rotate-180' : ''}`}
+                className={`w-4 h-4 text-gray-500 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
               />
             </button>
 
-            {finalIsDropdownOpen && (
+            {isDropdownOpen && (
               <div className="absolute top-full left-0 mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-10">
                 <button
-                  onClick={() => finalHandleSortChange('newest')}
-                  className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${finalSortBy === 'newest' ? 'text-blue-600 font-medium' : 'text-gray-700'}`}
+                  onClick={() => handleSortChangeWithUI('newest')}
+                  className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${sortBy === 'newest' ? 'text-blue-600 font-medium' : 'text-gray-700'}`}
                 >
                   Newest
                 </button>
                 <button
-                  onClick={() => finalHandleSortChange('oldest')}
-                  className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${finalSortBy === 'oldest' ? 'text-blue-600 font-medium' : 'text-gray-700'}`}
+                  onClick={() => handleSortChangeWithUI('oldest')}
+                  className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${sortBy === 'oldest' ? 'text-blue-600 font-medium' : 'text-gray-700'}`}
                 >
                   Oldest
                 </button>
@@ -148,7 +157,7 @@ export function ListingsPanel() {
       )}
 
       <div className="flex-1 px-6 py-4">
-        {searchQuery && finalSortedListings.length === 0 ? (
+        {searchQuery && sortedListings.length === 0 ? (
           <div className="text-center py-12">
             <div className="inline-flex items-center justify-center w-12 h-12 bg-gray-100 rounded-full mb-4">
               <HiMagnifyingGlass className="w-6 h-6 text-gray-500" />
@@ -159,7 +168,7 @@ export function ListingsPanel() {
             </p>
           </div>
         ) : (
-          finalSortedListings.map((listing, index) => {
+          sortedListings.map((listing, index) => {
             if (index === 2) {
               return (
                 <React.Fragment key={listing._id}>
