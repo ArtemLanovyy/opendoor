@@ -31,7 +31,7 @@ interface ListingsContextType {
   fetchListings: () => Promise<void>;
 }
 
-const ListingsContext = createContext<ListingsContextType | undefined>(undefined);
+export const ListingsContext = createContext<ListingsContextType | undefined>(undefined);
 
 export function useListings() {
   const context = useContext(ListingsContext);
