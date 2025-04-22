@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useMemo } from 'react';
+import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import { HiOutlinePlus, HiOutlineMinus } from 'react-icons/hi2';
 import { GoogleMap, useLoadScript, MarkerF, MarkerClustererF } from '@react-google-maps/api';
 import { useListings } from '../../context/ListingsContext.tsx';
@@ -26,6 +26,7 @@ interface Property {
 interface MapProps {
   onBoundsChanged?: (bounds: google.maps.LatLngBounds) => void;
   onPropertyClick?: (propertyId: string) => void;
+  selectedPropertyId?: string;
 }
 
 const listingToProperty = (listing: Listing): Property => {
@@ -37,7 +38,7 @@ const listingToProperty = (listing: Listing): Property => {
   };
 };
 
-export function Map({ onBoundsChanged, onPropertyClick }: MapProps) {
+export function Map({ onBoundsChanged, onPropertyClick, selectedPropertyId }: MapProps) {
   const { sortedListings } = useListings();
 
   const properties: Property[] = useMemo(
@@ -56,6 +57,17 @@ export function Map({ onBoundsChanged, onPropertyClick }: MapProps) {
     mapRef.current = map;
     setMap(map);
   }, []);
+
+  // Focus on a property when selectedPropertyId changes
+  useEffect(() => {
+    if (map && selectedPropertyId) {
+      const selectedProperty = properties.find(p => p.id === selectedPropertyId);
+      if (selectedProperty) {
+        map.panTo({ lat: selectedProperty.lat, lng: selectedProperty.lng });
+        map.setZoom(16);
+      }
+    }
+  }, [map, selectedPropertyId, properties]);
 
   const handleZoomIn = () => {
     if (map) {
@@ -105,6 +117,9 @@ export function Map({ onBoundsChanged, onPropertyClick }: MapProps) {
                   position={{ lat: property.lat, lng: property.lng }}
                   onClick={() => onPropertyClick?.(property.id)}
                   clusterer={clusterer}
+                  animation={
+                    selectedPropertyId === property.id ? google.maps.Animation.BOUNCE : undefined
+                  }
                 />
               ))}
             </>

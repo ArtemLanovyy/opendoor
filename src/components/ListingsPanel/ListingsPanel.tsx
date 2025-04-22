@@ -1,11 +1,16 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { useListings } from '../../context/ListingsContext';
 import { useListingsUI } from './useListingsUI';
 import { ListingCard } from '../ListingCard/ListingCard';
 import { OfferBanner } from '../OfferBanner/OfferBanner';
 import { HiOutlineFunnel, HiChevronDown, HiMagnifyingGlass } from 'react-icons/hi2';
 
-export function ListingsPanel() {
+interface ListingsPanelProps {
+  onListingClick?: (listingId: string) => void;
+  selectedPropertyId?: string;
+}
+
+export function ListingsPanel({ onListingClick, selectedPropertyId }: ListingsPanelProps) {
   const {
     searchQuery,
     isLoading,
@@ -26,6 +31,19 @@ export function ListingsPanel() {
     toggleDropdown,
     closeDropdown,
   } = useListingsUI();
+
+  // Create a ref for the selected listing card
+  const selectedListingRef = useRef<HTMLDivElement>(null);
+
+  // Scroll to the selected listing when selectedPropertyId changes
+  useEffect(() => {
+    if (selectedPropertyId && selectedListingRef.current) {
+      selectedListingRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+    }
+  }, [selectedPropertyId]);
 
   if (isLoading) {
     return (
@@ -167,15 +185,29 @@ export function ListingsPanel() {
           </div>
         ) : (
           sortedListings.map((listing, index) => {
+            const isSelected = listing._id === selectedPropertyId;
             if (index === 2) {
               return (
                 <React.Fragment key={listing._id}>
                   <OfferBanner />
-                  <ListingCard listing={listing} />
+                  <ListingCard
+                    ref={isSelected ? selectedListingRef : null}
+                    listing={listing}
+                    onClick={onListingClick}
+                    isSelected={isSelected}
+                  />
                 </React.Fragment>
               );
             }
-            return <ListingCard key={listing._id} listing={listing} />;
+            return (
+              <ListingCard
+                key={listing._id}
+                ref={isSelected ? selectedListingRef : null}
+                listing={listing}
+                onClick={onListingClick}
+                isSelected={isSelected}
+              />
+            );
           })
         )}
       </div>
